@@ -35,8 +35,8 @@ void drawGame() {
     for (int i = 0; i < tailLength; i++) {
         matrix.setPixelColor(getPixelIndex(tailX[i], tailY[i]), matrix.Color(0, 255, 0)); // Green body
     }
-    matrix.setPixelColor(getPixelIndex(headX, headY), matrix.Color(0, 255, 0)); // Red head
-    matrix.setPixelColor(getPixelIndex(foodX, foodY), matrix.Color(255, 0, 0)); // Yellow food
+    matrix.setPixelColor(getPixelIndex(headX, headY), matrix.Color(0, 255, 0)); // Green head
+    matrix.setPixelColor(getPixelIndex(foodX, foodY), matrix.Color(255, 0, 0)); // Red food
     matrix.show();
 }
 
@@ -113,16 +113,17 @@ void setup() {
 }
 
 void loop() {
-    if (digitalRead(push) == LOW && !buttonPressed) {
-        buttonPressed = true;
-        pressCount = (pressCount + 1) % 4;
-        delay(200);
-    }
-    if (digitalRead(push) == HIGH) {
-        buttonPressed = false;
-    }
+  
 
-    if (pressCount == 1) {
+    if (digitalRead(push) == LOW) {
+        buttonPressed = true;
+        pressCount = (pressCount + 1);
+        if (pressCount > 3){
+          pressCount = 1;
+        }
+        
+    }
+    else if (pressCount == 1) {
         drawBitmap(bmp_H, matrix.Color(0, 0, 255));
     } 
     else if (pressCount == 2) {
@@ -130,10 +131,23 @@ void loop() {
     }
     else if (pressCount >= 3) {
         gameStarted = true;
+
+        
+        
+        Serial.println(digitalRead(2));
+        Serial.println(digitalRead(4));
+        Serial.println(digitalRead(6));
+        Serial.println(digitalRead(8));       
+                
+
+
+        
         if (digitalRead(2) == LOW && dirY == 0) { dirX = 0; dirY = -1; }
         else if (digitalRead(4) == LOW && dirX == 0) { dirX = 1; dirY = 0; }
         else if (digitalRead(6) == LOW && dirY == 0) { dirX = 0; dirY = 1; }
         else if (digitalRead(8) == LOW && dirX == 0) { dirX = -1; dirY = 0; }
+
+
         
         moveSnake();
         if (checkCollision()) {
@@ -144,17 +158,16 @@ void loop() {
             spawnFood();
         }
         drawGame();
-        delay(500);
+        
         if (gameOver) {
             Serial.println("Restarting game...");
-            delay(2000);
+            millis();
             headX = 4; headY = 4;
             dirX = 1; dirY = 0;
             tailLength = 0;
             gameOver = false;
             gameStarted = false;
             spawnFood();
-            pressCount = 3;
         }
     }
 }
