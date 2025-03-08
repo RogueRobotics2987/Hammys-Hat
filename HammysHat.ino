@@ -142,6 +142,7 @@ void loop() {
 
 
         
+        
         if (digitalRead(2) == LOW && dirY == 0) { dirX = 0; dirY = -1; }
         else if (digitalRead(4) == LOW && dirX == 0) { dirX = 1; dirY = 0; }
         else if (digitalRead(6) == LOW && dirY == 0) { dirX = 0; dirY = 1; }
