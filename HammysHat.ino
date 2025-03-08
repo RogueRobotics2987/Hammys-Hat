@@ -1,42 +1,54 @@
 #include <Adafruit_NeoPixel.h>
+#include <FastLED.h>
 
-#define LED_PIN 10       // Data pin connected to WS2812 Matrix
+#define LED_PIN  10
+// Adjust for STM32 pin
 #define MATRIX_WIDTH 8  // 8x8 matrix size
 #define MATRIX_HEIGHT 8 
 #define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
-
+CRGB leds[NUM_LEDS];
 Adafruit_NeoPixel matrix = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 int push = 0;  // Push button pin
 
 // Joystick and game variables
-int headX = 4, headY = 4; // Snake head position
-int dirX = 1, dirY = 0;   // Snake direction
+int headX = (rand() % 7) + 1, headY = (rand() % 7) + 1; // Snake head position
+int dirX = 0, dirY = 0;   // Snake direction
 int tailX[64], tailY[64]; // Snake body segments
 int tailLength = 0;        // Snake length
 int foodX, foodY;          // Food position
 bool gameOver = false;
 bool gameStarted = false;  // Flag to check if game has started
 
+
 int pressCount = 0;  // Count how many times the button has been pressed
 bool buttonPressed = false;
 
 // Function to map (x, y) to WS2812 strip index (zigzag pattern)
-int getPixelIndex(int x, int y) {
-    if (y % 2 == 0) {
-        return (y * MATRIX_WIDTH) + x;  // Even rows left to right
-    } else {
-        return (y * MATRIX_WIDTH) + (MATRIX_WIDTH - 1 - x);  // Odd rows right to left
+
+int getLEDIndex(int x, int y) { //fixes coordinates on matrix
+    if (y % 2 == 0) {  
+        return (y * 8) + x;  // Even rows (left to right)
+    } else {  
+        return (y * 8) + x;  // Odd rows (right to left)
     }
 }
+int getPixelIndex(int x, int y) { //fixes coordinates on matrix
+    if (y % 2 == 0) {  
+        return (y * 8) + x;  // Even rows (left to right)
+    } else {  
+        return (y * 8) + x;  // Odd rows (right to left)
+    }
+}
+
 
 void drawGame() {
     matrix.clear();
     for (int i = 0; i < tailLength; i++) {
-        matrix.setPixelColor(getPixelIndex(tailX[i], tailY[i]), matrix.Color(0, 255, 0)); // Green body
+        matrix.setPixelColor(getLEDIndex(tailX[i], tailY[i]), matrix.Color(127, 127, 0)); // yellow body
     }
-    matrix.setPixelColor(getPixelIndex(headX, headY), matrix.Color(0, 255, 0)); // Green head
-    matrix.setPixelColor(getPixelIndex(foodX, foodY), matrix.Color(255, 0, 0)); // Red food
+    matrix.setPixelColor(getLEDIndex(headX, headY), matrix.Color(0, 255, 0)); // Green head
+    matrix.setPixelColor(getLEDIndex(foodX, foodY), matrix.Color(255, 0, 0)); // Red food
     matrix.show();
 }
 
@@ -87,8 +99,8 @@ bool checkCollision() {
 }
 
 void spawnFood() {
-    foodX = random(0, MATRIX_WIDTH);
-    foodY = random(0, MATRIX_HEIGHT);
+    foodX = (rand() % 7) + 1;
+    foodY = (rand() % 7) + 1;
 }
 
 bool checkFood() {
@@ -110,27 +122,33 @@ void setup() {
     matrix.show();
     matrix.setBrightness(128);
     spawnFood();
+    FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS);
 }
 
 void loop() {
   
-
     if (digitalRead(push) == LOW) {
+        delay(200);
         buttonPressed = true;
         pressCount = (pressCount + 1);
-        if (pressCount > 3){
-          pressCount = 1;
-        }
-        
+    }
+    if (pressCount == 0){
+       matrix.clear();
     }
     else if (pressCount == 1) {
         drawBitmap(bmp_H, matrix.Color(0, 0, 255));
+        Serial.println("pressCount 1");
+    
     } 
     else if (pressCount == 2) {
         drawBitmap(bmp_H, matrix.Color(255, 0, 0));
+        Serial.println("pressCount 2");
     }
     else if (pressCount >= 3) {
         gameStarted = true;
+        Serial.println("pressCount 3");
+        
+    
 
         
         
@@ -142,11 +160,21 @@ void loop() {
 
 
         
-        
-        if (digitalRead(2) == LOW && dirY == 0) { dirX = 0; dirY = -1; }
-        else if (digitalRead(4) == LOW && dirX == 0) { dirX = 1; dirY = 0; }
-        else if (digitalRead(6) == LOW && dirY == 0) { dirX = 0; dirY = 1; }
-        else if (digitalRead(8) == LOW && dirX == 0) { dirX = -1; dirY = 0; }
+    if (digitalRead(2) == LOW && dirY == 0) {  // Up
+        dirY -= 1;
+        dirX = 0;
+    } else if (digitalRead(6) == LOW && dirY == 0) {  // Down
+        dirY += 1;
+        dirX = 0;
+    } else if (digitalRead(8) == LOW && dirX == 0) {  // Left
+        dirX -= 1;
+        dirY = 0;
+    } else if (digitalRead(4) == LOW && dirX == 0) {  // Right
+        dirX += 1;
+        dirY = 0;
+    }
+
+
 
 
         
@@ -154,21 +182,23 @@ void loop() {
         if (checkCollision()) {
             Serial.println("Game Over");
             gameOver = true;
+            
+            
         }
         if (checkFood()) {
             spawnFood();
         }
         drawGame();
-        
-        if (gameOver) {
-            Serial.println("Restarting game...");
-            millis();
-            headX = 4; headY = 4;
-            dirX = 1; dirY = 0;
-            tailLength = 0;
-            gameOver = false;
-            gameStarted = false;
-            spawnFood();
+        delay(500);
+        if (gameOver){
+          pressCount = 0;
+          headX = (rand() % 7) + 1, headY = (rand() % 7) + 1; // Snake head position
+          dirX = 0, dirY = 0;   // Snake direction
+          tailX[64], tailY[64]; // Snake body segments
+          tailLength = 0;        // Snake length
+          foodX, foodY;          // Food position
+          gameOver = false;
+          gameStarted = false;  // Flag to check if game has started
         }
-    }
+  }
 }
