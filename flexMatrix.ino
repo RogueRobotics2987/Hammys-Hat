@@ -1,6 +1,10 @@
 #include <FastLED.h>
+#include <LedControl.h>
 
-#define LED_PIN     12
+#define LED_PIN     13     // Data Pin (usually referred to as DI or Data In)
+#define CLK_PIN     12     // Clock Pin (usually referred to as SCK or Clock)
+#define CS_PIN      11     // Chip Select Pin (used for selecting the matrix)
+
 #define WIDTH       32
 #define HEIGHT      8
 #define NUM_LEDS    (WIDTH * HEIGHT)
@@ -60,7 +64,7 @@ void drawText(int offset) {
 
 void setup() {
   pinMode(12, INPUT);  // or pinMode(12, INPUT_PULLUP);
-    FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+    FastLED.addLeds<WS2812B, DIN_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(BRIGHTNESS);
 
     // Initialize the LEDs immediately by drawing the candy cane pattern first.
@@ -70,7 +74,7 @@ void setup() {
 
 void loop() {
 
-      int inputState = digitalRead(LED_PIN);
+      int inputState = digitalRead(DIN_PIN);
 
 
     static int offset = 0;
